@@ -317,7 +317,16 @@ def install_dualvln_tracing(
             started = time.monotonic_ns()
             output = original_generate_traj(*args, **kwargs)
             try:
-                converted_actions = [int(action) for action in traj_to_actions(output)]
+                # InternNav's traj_to_actions performs in-place normalization
+                # (dp_actions[:, :, :2] /= 4).  Always convert a copy so tracing
+                # cannot modify the tensor later consumed by the native evaluator.
+                if isinstance(output, torch.Tensor):
+                    trace_output = output.detach().clone()
+                elif isinstance(output, np.ndarray):
+                    trace_output = output.copy()
+                else:
+                    trace_output = output
+                converted_actions = [int(action) for action in traj_to_actions(trace_output)]
             except Exception as error:  # tracing must never break native inference
                 converted_actions = [f"trace_conversion_error: {error}"]
             tracer.emit(
