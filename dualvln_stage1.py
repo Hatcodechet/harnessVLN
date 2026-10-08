@@ -10,6 +10,7 @@ prompt, model generation, action conversion, rewards, or termination behavior.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -30,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--subset", required=True, choices=("smoke_subset", "development_subset"))
     parser.add_argument("--output-path", required=True, type=Path)
     parser.add_argument("--model-path", required=True, type=Path)
+    parser.add_argument("--dataset-manifest", required=True, type=Path)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--trace", action="store_true")
     parser.add_argument("--save-trace-images", action="store_true")
@@ -73,17 +75,27 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main() -> None:
     args = parse_args()
     args.config = args.config.resolve()
     args.manifest = args.manifest.resolve()
     args.model_path = args.model_path.resolve()
+    args.dataset_manifest = args.dataset_manifest.resolve()
     args.output_path = args.output_path.resolve()
 
     for path, label in (
         (args.config, "config"),
         (args.manifest, "episode manifest"),
         (args.model_path, "model checkpoint"),
+        (args.dataset_manifest, "R2R dataset manifest"),
     ):
         if not path.exists():
             raise FileNotFoundError(f"{label} not found: {path}")
@@ -96,6 +108,12 @@ def main() -> None:
         )
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    dataset_sha256 = sha256_file(args.dataset_manifest)
+    expected_sha256 = manifest.get("source_manifest_sha256")
+    if expected_sha256 and dataset_sha256 != expected_sha256:
+        raise RuntimeError(
+            f"Dataset manifest checksum mismatch: {dataset_sha256} != {expected_sha256}"
+        )
     requested_rows = manifest[args.subset]
     requested = [(str(row["scene_id"]), str(row["episode_id"])) for row in requested_rows]
     if len(requested) != len(set(requested)):
@@ -152,6 +170,8 @@ def main() -> None:
         "save_trace_images": args.save_trace_images,
         "config_path": str(args.config),
         "manifest_path": str(args.manifest),
+        "dataset_manifest_path": str(args.dataset_manifest),
+        "dataset_manifest_sha256": dataset_sha256,
         "model_path": str(args.model_path),
         "internnav_root": str(root),
         "internnav_git_sha": git_sha(root),

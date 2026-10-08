@@ -14,6 +14,7 @@ OUTPUT_PATH="$2"
 HARNESS_ROOT="${HARNESS_ROOT:-$(cd -- "${SCRIPT_DIR}/../.." && pwd)}"
 CONFIG="${CONFIG:-scripts/eval/configs/habitat_dual_system_cfg.py}"
 MANIFEST="${MANIFEST:-${HARNESS_ROOT}/configs/dualvln_stage1_episodes.json}"
+DATASET_MANIFEST="${DATASET_MANIFEST:-${R2R_ROOT}/val_unseen/val_unseen.json.gz}"
 MASTER_PORT="${MASTER_PORT:-2333}"
 TRACE="${TRACE:-0}"
 SEED="${SEED:-42}"
@@ -27,6 +28,7 @@ cd "$INTERNNAV_ROOT"
 
 require_path "$CONFIG" "DualVLN evaluation config"
 require_path "$MANIFEST" "Stage 1 episode manifest"
+require_path "$DATASET_MANIFEST" "R2R val_unseen manifest"
 require_path "${HARNESS_ROOT}/dualvln_stage1.py" "Stage 1 runner"
 
 mkdir -p "$(dirname -- "$OUTPUT_PATH")"
@@ -37,6 +39,7 @@ ARGS=(
   --subset "$SUBSET"
   --output-path "$OUTPUT_PATH"
   --model-path "$DUALVLN_CHECKPOINT"
+  --dataset-manifest "$DATASET_MANIFEST"
   --seed "$SEED"
 )
 if [[ "$TRACE" == "1" ]]; then

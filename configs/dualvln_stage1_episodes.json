@@ -3,6 +3,7 @@
   "split": "val_unseen",
   "seed": 42,
   "source_episode_count": 1839,
+  "source_manifest_sha256": "1767a407e2c8a011fbb7abece76cd64c5b39ff9fa0e9e340ebdce5a490d167c3",
   "selection_policy": "Smoke: three preselected episodes from three scenes. Development: first two source-order episodes in each of the first ten lexically sorted scenes. Frozen before DualVLN outcomes are observed.",
   "smoke_subset": [
     {"scene_id": "2azQ1b91cZZ", "episode_id": "10"},
