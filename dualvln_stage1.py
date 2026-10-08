@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--manifest", required=True, type=Path)
-    parser.add_argument("--subset", required=True, choices=("smoke_subset", "development_subset"))
+    parser.add_argument("--subset", required=True, help="List key in the JSON episode manifest")
     parser.add_argument("--output-path", required=True, type=Path)
     parser.add_argument("--model-path", required=True, type=Path)
     parser.add_argument("--dataset-manifest", required=True, type=Path)
@@ -59,6 +59,55 @@ def scene_id(episode: Any) -> str:
 
 def episode_key(episode: Any) -> tuple[str, str]:
     return scene_id(episode), str(episode.episode_id)
+
+
+def deterministic_episode_seed(base_seed: int, episode: Any) -> int:
+    payload = f"{base_seed}:{scene_id(episode)}:{episode.episode_id}".encode()
+    return int.from_bytes(hashlib.sha256(payload).digest()[:4], "big") & 0x7FFFFFFF
+
+
+def seed_everything(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+class EpisodeSeededEnv:
+    """Reset policy/simulator RNG independently for every selected episode."""
+
+    def __init__(self, env: Any, base_seed: int) -> None:
+        object.__setattr__(self, "_wrapped", env)
+        object.__setattr__(self, "_base_seed", base_seed)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._wrapped, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in {"_wrapped", "_base_seed"}:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._wrapped, name, value)
+
+    def reset(self, *args: Any, **kwargs: Any) -> Any:
+        index = self._wrapped._current_episode_index
+        if not (0 <= index < len(self._wrapped.episodes)):
+            return self._wrapped.reset(*args, **kwargs)
+        episode = self._wrapped.episodes[index]
+        episode_seed = deterministic_episode_seed(self._base_seed, episode)
+        seed_everything(episode_seed)
+        habitat_env = getattr(self._wrapped, "_env", None)
+        if habitat_env is not None and hasattr(habitat_env, "seed"):
+            habitat_env.seed(episode_seed)
+        observations = self._wrapped.reset(*args, **kwargs)
+        # Habitat reset may consume global RNG; policy randomness starts here.
+        seed_everything(episode_seed)
+        print(
+            f"EPISODE_SEED scene={scene_id(episode)} episode={episode.episode_id} seed={episode_seed}",
+            flush=True,
+        )
+        return observations
 
 
 def git_sha(root: Path) -> str | None:
@@ -119,11 +168,7 @@ def main() -> None:
     if len(requested) != len(set(requested)):
         raise ValueError(f"Duplicate episode key in {args.subset}")
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+    seed_everything(args.seed)
 
     from internnav.evaluator import Evaluator
 
@@ -149,6 +194,7 @@ def main() -> None:
     evaluator.env.episodes = [available[key] for key in requested if key in available]
     evaluator.env._current_episode_index = 0
     evaluator.env.is_running = True
+    evaluator.env = EpisodeSeededEnv(evaluator.env, args.seed)
 
     args.output_path.mkdir(parents=True, exist_ok=True)
     root = Path.cwd()
@@ -166,6 +212,7 @@ def main() -> None:
             if (scene, episode) in completed
         ],
         "seed": args.seed,
+        "episode_seed_mode": "sha256(base_seed:scene_id:episode_id), reset before policy inference",
         "trace_enabled": args.trace,
         "save_trace_images": args.save_trace_images,
         "config_path": str(args.config),
@@ -175,6 +222,7 @@ def main() -> None:
         "model_path": str(args.model_path),
         "internnav_root": str(root),
         "internnav_git_sha": git_sha(root),
+        "harness_git_sha": git_sha(Path(__file__).resolve().parent),
         "python": sys.version,
         "torch": torch.__version__,
         "cuda": torch.version.cuda,

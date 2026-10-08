@@ -1,0 +1,31 @@
+diff --git a/internnav/habitat_extensions/vln/habitat_vln_evaluator.py b/internnav/habitat_extensions/vln/habitat_vln_evaluator.py
+index 01378df..105dc64 100644
+--- a/internnav/habitat_extensions/vln/habitat_vln_evaluator.py
++++ b/internnav/habitat_extensions/vln/habitat_vln_evaluator.py
+@@ -72,0 +73,5 @@ class HabitatVLNEvaluator(DistributedEvaluator):
++        self.stage2_controller = None
++        if os.environ.get("DUALVLN_BRANCH_SPEC"):
++            from stage2_branch import Stage2BranchController
++
++            self.stage2_controller = Stage2BranchController.from_environment(self.output_path)
+@@ -369,0 +375,20 @@ class HabitatVLNEvaluator(DistributedEvaluator):
++                if self.stage2_controller is not None:
++                    branch_choice = self.stage2_controller.maybe_branch(
++                        scene_id=scene_id,
++                        episode_id=episode_id,
++                        step_id=step_id,
++                        observations=observations,
++                        pixel_goal=pixel_goal,
++                        local_actions=local_actions,
++                        action_seq=action_seq,
++                        forward_action=forward_action if pixel_goal is not None else 0,
++                    )
++                    if branch_choice == "replan":
++                        action_seq = []
++                        pixel_goal = None
++                        output_ids = None
++                        action = None
++                        messages = []
++                        local_actions = []
++                        forward_action = 0
++

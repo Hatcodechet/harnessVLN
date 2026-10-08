@@ -114,3 +114,30 @@ Common overrides include `GPU_INDEX=1`, `MASTER_PORT=2345`, `SEED=42`, and
 `SAVE_TRACE_IMAGES=1`. The images are off by default to keep traces lightweight.
 Paths can be overridden with `CONDA_ROOT`, `CONDA_ENV`, `INTERNNAV_ROOT`,
 `CHECKPOINT_ROOT`, `JANUSVLN_ROOT`, `R2R_ROOT`, and `SCENES_ROOT`.
+
+## Stage 2 synchronized branch pilot
+
+After the validated dev-20 run, prepare a frozen eight-pair pilot. The preparation
+script applies a minimal hook only to pinned InternNav SHA `7a5c624`, compiles it,
+and selects six failure states plus two successful controls without looking at
+branch outcomes:
+
+```bash
+bash scripts/dualvln/06_prepare_stage2.sh
+```
+
+Run the replayed COMMIT and REPLAN arms with the same per-episode deterministic
+seed, then validate paired snapshot signatures and aggregate outcomes:
+
+```bash
+GPU_INDEX=0 MASTER_PORT=2340 bash scripts/dualvln/07_run_stage2_commit.sh
+GPU_INDEX=0 MASTER_PORT=2341 bash scripts/dualvln/08_run_stage2_replan.sh
+bash scripts/dualvln/09_analyze_stage2.sh
+```
+
+Each arm replays an episode deterministically to the requested runtime checkpoint.
+The analyzer requires the current RGB/depth hashes, active pixel goal, queued local
+actions, and Python/NumPy/Torch CPU/CUDA RNG signatures to match before accepting a
+pair. REPLAN then clears the active commitment and invokes System 2 on the current
+observation; COMMIT leaves native state untouched. This is a pilot, not training or
+a publication benchmark.

@@ -5,11 +5,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "${SCRIPT_DIR}/common.sh"
 
-[[ $# -eq 2 ]] || die "Usage: $0 <smoke_subset|development_subset> <output-path>"
+[[ $# -eq 2 ]] || die "Usage: $0 <manifest-subset-key> <output-path>"
 SUBSET="$1"
 OUTPUT_PATH="$2"
-[[ "$SUBSET" == "smoke_subset" || "$SUBSET" == "development_subset" ]] \
-  || die "Unknown subset: $SUBSET"
 
 HARNESS_ROOT="${HARNESS_ROOT:-$(cd -- "${SCRIPT_DIR}/../.." && pwd)}"
 CONFIG="${CONFIG:-scripts/eval/configs/habitat_dual_system_cfg.py}"
