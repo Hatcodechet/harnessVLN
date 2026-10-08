@@ -71,3 +71,25 @@ python3 validate_trace.py artifacts/stage1/runs/smoke_trace_on
 
 Large traces, images, datasets, checkpoints, and result directories are ignored.
 
+## InternVLA-N1 DualVLN on the remote workstation
+
+The remote setup uses the isolated `dualvln_harness` Conda environment and the
+clean InternNav checkout at `/storage/anhdh35/InternNav_harness`. Run the scripts
+from this repository in order:
+
+```bash
+bash scripts/dualvln/check_dualvln.sh
+bash scripts/dualvln/smoke_dualvln_model.sh
+RUN_FULL_EVAL=1 bash scripts/dualvln/run_dualvln_eval.sh
+```
+
+The full evaluation script deliberately requires `RUN_FULL_EVAL=1` because the
+official config evaluates all of R2R `val_unseen`. Common overrides include:
+
+```bash
+GPU_INDEX=1 MASTER_PORT=2345 RUN_FULL_EVAL=1 \
+  bash scripts/dualvln/run_dualvln_eval.sh
+```
+
+Paths can be overridden with `CONDA_ROOT`, `CONDA_ENV`, `INTERNNAV_ROOT`,
+`CHECKPOINT_ROOT`, `JANUSVLN_ROOT`, `R2R_ROOT`, and `SCENES_ROOT`.
