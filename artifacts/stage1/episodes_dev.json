@@ -1,0 +1,39 @@
+{
+  "selection_policy": "First two episodes in source dataset order for the first ten scene IDs in lexical order; selected before diagnostic rollout results.",
+  "dataset": "R2R-CE",
+  "split": "val_unseen",
+  "dataset_path": "${SPATIALSTACK_DATA_ROOT}/datasets/r2r/val_unseen/val_unseen.json.gz",
+  "dataset_sha256": "1767a407e2c8a011fbb7abece76cd64c5b39ff9fa0e9e340ebdce5a490d167c3",
+  "source_episode_count": 1839,
+  "source_scene_count": 11,
+  "seed": 42,
+  "smoke_subset": [
+    {"scene_id": "2azQ1b91cZZ", "episode_id": "10", "trajectory_id": 57},
+    {"scene_id": "8194nk5LbLH", "episode_id": "220", "trajectory_id": 932},
+    {"scene_id": "EU6Fwq7SyZv", "episode_id": "127", "trajectory_id": 482}
+  ],
+  "development_subset": [
+    {"scene_id": "2azQ1b91cZZ", "episode_id": "10", "trajectory_id": 57},
+    {"scene_id": "2azQ1b91cZZ", "episode_id": "11", "trajectory_id": 57},
+    {"scene_id": "8194nk5LbLH", "episode_id": "220", "trajectory_id": 932},
+    {"scene_id": "8194nk5LbLH", "episode_id": "221", "trajectory_id": 932},
+    {"scene_id": "EU6Fwq7SyZv", "episode_id": "127", "trajectory_id": 482},
+    {"scene_id": "EU6Fwq7SyZv", "episode_id": "128", "trajectory_id": 482},
+    {"scene_id": "QUCTc6BB5sX", "episode_id": "19", "trajectory_id": 101},
+    {"scene_id": "QUCTc6BB5sX", "episode_id": "20", "trajectory_id": 101},
+    {"scene_id": "TbHJrupSAjP", "episode_id": "4", "trajectory_id": 21},
+    {"scene_id": "TbHJrupSAjP", "episode_id": "5", "trajectory_id": 21},
+    {"scene_id": "X7HyMhZNoso", "episode_id": "46", "trajectory_id": 162},
+    {"scene_id": "X7HyMhZNoso", "episode_id": "47", "trajectory_id": 162},
+    {"scene_id": "Z6MFQCViBuw", "episode_id": "205", "trajectory_id": 817},
+    {"scene_id": "Z6MFQCViBuw", "episode_id": "206", "trajectory_id": 817},
+    {"scene_id": "oLBMNvg9in8", "episode_id": "28", "trajectory_id": 128},
+    {"scene_id": "oLBMNvg9in8", "episode_id": "29", "trajectory_id": 128},
+    {"scene_id": "pLe4wQe7qrG", "episode_id": "412", "trajectory_id": 1654},
+    {"scene_id": "pLe4wQe7qrG", "episode_id": "413", "trajectory_id": 1654},
+    {"scene_id": "x8F5xyUWy9e", "episode_id": "7", "trajectory_id": 42},
+    {"scene_id": "x8F5xyUWy9e", "episode_id": "8", "trajectory_id": 42}
+  ],
+  "excluded_lexically_last_scene": "zsNo4HB9uLZ",
+  "evaluator_selection_mechanism": "scene_ids plus MAX_EPISODES=2; evaluator preserves source order and shuffle=False"
+}

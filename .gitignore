@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+artifacts/stage1/runs/*/*/rgb/
+artifacts/stage1/runs/
+artifacts/stage1/results/
+artifacts/stage1/*.csv
+artifacts/stage1/*summary.json
+*.pyc
