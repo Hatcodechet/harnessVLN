@@ -78,6 +78,24 @@ def tensor_summary(value: Any, include_values: bool = False) -> Any:
     return result
 
 
+def compact_metrics(metrics: Any) -> Any:
+    """Keep scalar metrics while avoiding multi-megabyte top-down maps per step."""
+    if isinstance(metrics, dict):
+        compact = {}
+        for key, value in metrics.items():
+            if key == "top_down_map":
+                if value is not None:
+                    compact[key] = {"omitted": True, "reason": "large visualization-only payload"}
+                continue
+            compact[str(key)] = compact_metrics(value)
+        return compact
+    if isinstance(metrics, (np.ndarray, torch.Tensor)):
+        element_count = metrics.size if isinstance(metrics, np.ndarray) else metrics.numel()
+        if element_count > 32:
+            return {"shape": list(metrics.shape), "dtype": str(metrics.dtype), "values_omitted": True}
+    return jsonable(metrics)
+
+
 class DualVLNTracer:
     def __init__(self, trace_root: Path, run_metadata: dict[str, Any], save_images: bool) -> None:
         self.trace_root = trace_root
@@ -165,7 +183,7 @@ class DualVLNTracer:
         observations, reward, done, info = result
         action_int = int(action)
         self.sim_step_idx += 1
-        self.last_metrics = jsonable(info)
+        self.last_metrics = compact_metrics(info)
         self.emit(
             "executed_action",
             sim_step_idx=self.sim_step_idx,
@@ -174,7 +192,7 @@ class DualVLNTracer:
             executed_action_observability="successful HabitatEnv.step return",
             reward=reward,
             done=bool(done),
-            metrics=info,
+            metrics=self.last_metrics,
             environment_step_latency_ms=latency_ms,
         )
         self.record_observation(observations, source="step")
