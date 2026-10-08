@@ -6,3 +6,5 @@ artifacts/stage1/results/
 artifacts/stage1/*.csv
 artifacts/stage1/*summary.json
 *.pyc
+# DualVLN runtime outputs
+artifacts/dualvln/

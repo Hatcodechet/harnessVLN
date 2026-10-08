@@ -71,25 +71,46 @@ python3 validate_trace.py artifacts/stage1/runs/smoke_trace_on
 
 Large traces, images, datasets, checkpoints, and result directories are ignored.
 
-## InternVLA-N1 DualVLN on the remote workstation
+## InternVLA-N1 DualVLN Stage 1 on the remote workstation
 
 The remote setup uses the isolated `dualvln_harness` Conda environment and the
-clean InternNav checkout at `/storage/anhdh35/InternNav_harness`. Run the scripts
-from this repository in order:
+clean InternNav checkout at `/storage/anhdh35/InternNav_harness`. The Stage 1
+runner selects exact episode IDs from `configs/dualvln_stage1_episodes.json` before
+calling the upstream evaluator. It cannot silently expand a smoke run to all 1,839
+`val_unseen` episodes.
+
+Run the first three steps in order:
 
 ```bash
-bash scripts/dualvln/check_dualvln.sh
-bash scripts/dualvln/smoke_dualvln_model.sh
+bash scripts/dualvln/01_preflight.sh
+bash scripts/dualvln/02_model_smoke.sh
+bash scripts/dualvln/03_run_smoke3.sh
+```
+
+Step 3 is the genuine unmodified closed-loop baseline for three frozen episodes.
+After it succeeds, run the matched traced smoke and then the 20-episode diagnostic:
+
+```bash
+bash scripts/dualvln/04_run_smoke3_trace.sh
+bash scripts/dualvln/05_run_dev20_trace.sh
+```
+
+Tracing records System 2 generations, pixel goals, goal-conditioning calls, System 1
+trajectories, converted action sequences, every Habitat action, observations, timing,
+and final metrics. It is installed only when `TRACE=1`; step 3 has tracing disabled.
+
+Outputs are written under `artifacts/dualvln/`. Existing `progress.json` files are
+not overwritten; select a new location with `OUTPUT_PATH=...` or explicitly resume
+with `RESUME=1`.
+
+The full 1,839-episode evaluator remains available only for a later benchmark and
+requires explicit confirmation:
+
+```bash
 RUN_FULL_EVAL=1 bash scripts/dualvln/run_dualvln_eval.sh
 ```
 
-The full evaluation script deliberately requires `RUN_FULL_EVAL=1` because the
-official config evaluates all of R2R `val_unseen`. Common overrides include:
-
-```bash
-GPU_INDEX=1 MASTER_PORT=2345 RUN_FULL_EVAL=1 \
-  bash scripts/dualvln/run_dualvln_eval.sh
-```
-
+Common overrides include `GPU_INDEX=1`, `MASTER_PORT=2345`, `SEED=42`, and
+`SAVE_TRACE_IMAGES=1`. The images are off by default to keep traces lightweight.
 Paths can be overridden with `CONDA_ROOT`, `CONDA_ENV`, `INTERNNAV_ROOT`,
 `CHECKPOINT_ROOT`, `JANUSVLN_ROOT`, `R2R_ROOT`, and `SCENES_ROOT`.
